@@ -453,6 +453,51 @@ location: https://tc39.es/proposal-shadowrealm/
 				1. Return ~unused~.
 			</emu-alg>
 		</emu-clause>
+
+		<emu-clause id="sec-setuserexposedglobalbindings" type="abstract operation">
+			<h1>
+				SetUserExposedGlobalBindings (
+					_callerRealm_: a Realm Record,
+					_shadowRealm_: a Realm Record,
+					_exposeProperties_: a List of property keys,
+				): either a normal completion containing ~unused~ or a throw completion
+			</h1>
+			<dl class="header">
+				<dt>description</dt>
+				<dd>It exposes the global bindings _exposeProperties_ from the incubating realm, replacing callables with wrapped function exotic objects.</dd>
+			</dl>
+			<emu-alg>
+				1. Let _incubatingGlobal_ be _callerRealm_.[[GlobalObject]].
+				1. Let _shadowRealmGlobal_ be _shadowRealm_.[[GlobalObject]].
+				1. For each property key _P_ in _exposeProperties_, do
+					1. Perform ? CopyAndWrapPropertyInMembrane(_incubatingGlobal_, _shadowRealmGlobal_, _P_, _callerRealm_, _shadowRealm_.[[Intrinsics]].[[%Object.prototype%]]).
+				1. Return ~unused~.
+			</emu-alg>
+		</emu-clause>
+
+		<emu-clause id="sec-copyandwrapproperty" type="abstract operation">
+			<h1>
+				CopyAndWrapPropertyInMembrane (
+					_source_: an Object,
+					_target_: an Object,
+					_P_: a property key,
+					_callerRealm_: a Realm Record,
+					_targetObjectPrototype_: an Object,
+				): either a normal completion containing ~unused~ or a throw completion
+			</h1>
+			<dl class="header">
+				<dt>description</dt>
+				<dd>...</dd>
+			</dl>
+			<emu-alg>
+				1. Let _Desc_ be ? _source_.[[GetOwnProperty]](_P_).
+				1. Let _newDesc_ be a new Property Descriptor.
+				1. Set _newDesc_.[[Enumerable]] to _Desc_.[[Enumerable]].
+				1. Set _newDesc_.[[Configurable]] to _Desc_.[[Configurable]].
+				1. <mark>TODO: Wrap property value or getter in membrane.</mark>
+				1. Perform ? _target_.[[DefineOwnProperty]](_P_, _newDesc_).
+			</emu-alg>
+		</emu-clause>
 	</emu-clause>
 
 	<emu-clause id="sec-shadowrealm-constructor">
@@ -467,10 +512,17 @@ location: https://tc39.es/proposal-shadowrealm/
 		</ul>
 
 		<emu-clause id="sec-shadowrealm">
-			<h1>ShadowRealm ( )</h1>
+			<h1>ShadowRealm ( [ _options_ ] )</h1>
 			<p>This function performs the following steps when called:</p>
 			<emu-alg>
 				1. If NewTarget is *undefined*, throw a *TypeError* exception.
+				1. If _options_ is *undefined*, set _options_ to OrdinaryObjectCreate(*null*).
+				1. If _options_ is not an Object, throw a *TypeError* exception.
+				1. Let _expose_ be ? Get(_options_, *"expose"*).
+				1. If _expose_ is *undefined*, then
+					1. Let _exposeProperties_ be an empty List.
+				1. Else,
+					1. Let _exposeProperties_ be ? CreateListFromArrayLike(_expose_, « String, Symbol »).
 				1. Let _O_ be ? OrdinaryCreateFromConstructor(NewTarget, *"%ShadowRealm.prototype%"*, « [[ShadowRealm]], [[ExecutionContext]] »).
 				1. Let _realmRec_ be CreateRealm().
 				1. Set _O_.[[ShadowRealm]] to _realmRec_.
@@ -481,6 +533,8 @@ location: https://tc39.es/proposal-shadowrealm/
 				1. Set _O_.[[ExecutionContext]] to _context_.
 				1. Perform SetRealmGlobalObject(_realmRec_, *undefined*, *undefined*).
 				1. Perform ? SetDefaultGlobalBindings(_O_.[[ShadowRealm]]).
+				1. Let _callerRealm_ be the current Realm Record.
+				1. Perform ? SetUserExposedGlobalBindings(_callerRealm_, _O_.[[ShadowRealm]], _exposeProperties_).
 				1. Perform ? HostInitializeShadowRealm(_O_.[[ShadowRealm]]).
 				1. Return _O_.
 			</emu-alg>

@@ -57,7 +57,7 @@ This is the ShadowRealm API description in TypeScript format:
 
 ```ts
 declare class ShadowRealm {
-    constructor();
+    constructor(options?: { expose: string[] });
     importValue(specifier: string, bindingName: string): Promise<PrimitiveValueOrCallable>;
     evaluate(sourceText: string): PrimitiveValueOrCallable;
 }
@@ -361,7 +361,7 @@ const freezeRealmGlobal = await shadowRealm.importValue('./inside-code.js', 'ref
 
 /**
  * inside-code.js
- * 
+ *
  * export function reflectFreezeRealmGlobal() {
  *   try {
  *     Object.freeze(globalThis);
